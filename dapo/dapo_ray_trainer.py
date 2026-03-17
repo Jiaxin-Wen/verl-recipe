@@ -422,7 +422,7 @@ class RayDAPOTrainer(RayPPOTrainer):
                 try:
                     import wandb
                     import random as _rand
-                    num_samples = min(20, len(batch))
+                    num_samples = min(50, len(batch))
                     sample_indices = sorted(_rand.sample(range(len(batch)), num_samples))
                     table_data = []
                     for i in sample_indices:
@@ -436,7 +436,7 @@ class RayDAPOTrainer(RayPPOTrainer):
                         response_str = self.tokenizer.decode(response_ids[:valid_resp_len], skip_special_tokens=True)
                         score = batch.batch["token_level_scores"][i].sum().item()
                         ground_truth = item.non_tensor_batch.get("reward_model", {}).get("ground_truth", "")
-                        table_data.append([self.global_steps, prompt_str[:300], response_str[:2000], score, ground_truth])
+                        table_data.append([self.global_steps, prompt_str, response_str, score, ground_truth])
                     metrics["rollout_samples"] = wandb.Table(
                         columns=["step", "prompt", "response", "score", "ground_truth"],
                         data=table_data,
