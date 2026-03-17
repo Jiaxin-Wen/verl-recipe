@@ -418,6 +418,12 @@ class RayDAPOTrainer(RayPPOTrainer):
 
                 metrics["train/num_gen_batches"] = num_gen_batches
 
+                # Log reward extra info metrics (format_correct, acc, etc.)
+                for key in ["format_correct", "acc"]:
+                    if key in batch.non_tensor_batch:
+                        vals = batch.non_tensor_batch[key]
+                        metrics[f"reward/{key}"] = float(np.mean([float(v) for v in vals]))
+
                 # Log sample rollouts to WandB as a table
                 try:
                     import wandb
@@ -436,9 +442,11 @@ class RayDAPOTrainer(RayPPOTrainer):
                         response_str = self.tokenizer.decode(response_ids[:valid_resp_len], skip_special_tokens=True)
                         score = batch.batch["token_level_scores"][i].sum().item()
                         ground_truth = item.non_tensor_batch.get("reward_model", {}).get("ground_truth", "")
-                        table_data.append([self.global_steps, prompt_str, response_str, score, ground_truth])
+                        acc = bool(item.non_tensor_batch.get("acc", False))
+                        fmt = bool(item.non_tensor_batch.get("format_correct", False))
+                        table_data.append([self.global_steps, prompt_str, response_str, score, ground_truth, acc, fmt])
                     metrics["rollout_samples"] = wandb.Table(
-                        columns=["step", "prompt", "response", "score", "ground_truth"],
+                        columns=["step", "prompt", "response", "score", "ground_truth", "acc", "format_correct"],
                         data=table_data,
                     )
                 except Exception:
